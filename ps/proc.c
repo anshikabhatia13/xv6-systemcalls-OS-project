@@ -535,23 +535,38 @@ procdump(void)
     cprintf("\n");
   }
 }
-int ps(){
-struct proc *p;
-sti();
-acquire(&ptable.lock);
-cprintf("name \t pid \t state \t \n" );
-for(p=ptable.proc; p < &ptable.proc[NPROC]; p++){
-	if(p-> state == SLEEPING)
-		cprintf("%s \t %d \t SLEEPING \t \n", p->name, p->pid);
-	else if (p->state ==RUNNING)
-		cprintf("%s \t %d \t RUNNING \t \n", p->name, p->pid);
-	else if (p->state ==RUNNABLE)
-		cprintf("%s \t %d \t RUNNABLE \t \n", p->name, p->pid);
-}
-release(&ptable.lock);
-return 22;
+int
+ps(void)
+{
+  struct proc *p;
+  sti();
+  acquire(&ptable.lock);
+  cprintf("Name\tPID\tPPID\tSize\tState\tWaiting\tKilled\n");
 
- 
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+    if (p->state == UNUSED)
+      continue;
+
+    char *state;
+    if (p->state == SLEEPING)
+      state = "SLEEPING";
+    else if (p->state == RUNNING)
+      state = "RUNNING";
+    else if (p->state == RUNNABLE)
+      state = "RUNNABLE";
+    else
+      state = "UNKNOWN";
+
+    char *waiting = (p->chan) ? "Yes" : "No";
+    char *killed = (p->killed) ? "Yes" : "No";
+
+    cprintf("%s\t%d\t%d\t%d\t%s\t%s\t%s\n", p->name, p->pid, (p->parent ? p->parent->pid : -1), p->sz, state, waiting, killed);
+  }
+
+  release(&ptable.lock);
+  return 0;
+}
+
 }
 
 
