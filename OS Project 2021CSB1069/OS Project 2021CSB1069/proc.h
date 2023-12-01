@@ -1,6 +1,7 @@
 // Per-CPU state
 // proc.h
-#define T_TRACE_BOOT  0x00000008  // Trace during boot
+#define SYSCALL_TRACEONBOOT  0x00000008
+ // Trace during boot
 
 struct cpu {
   uchar apicid;                // Local APIC ID
@@ -53,10 +54,10 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
   int traced;                  // Whether process is being traced
-  int ctime;                   // Creation time
-  int stime;                   // Time spent in sleeping state
-  int retime;                  // Time spent in ready state
-  int rutime;                  // Time spent in running state
+  int creationtime;            // Creation time
+  int sleepingtime;            // Time spent in sleeping state
+  int readytime;               // Time spent in ready state
+  int runningtime;             // Time spent in running state
   int timeUsed;                // Number of ticks used from QUANTA
   int priority;                //Priority of a process. 3 is highest 1 is lowest
 
@@ -67,4 +68,4 @@ struct proc {
 //   original data and bss
 //   fixed-size stack
 //   expandable heap
-void updateStats();
+void updateStatistics();

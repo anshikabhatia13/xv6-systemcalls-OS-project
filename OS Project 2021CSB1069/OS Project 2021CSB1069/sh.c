@@ -17,6 +17,7 @@
 
 int tracing = 0;
 
+/* Q1 here we declare two srings trace and untrace to make sure whenever any one of them is input, we can start or stop the tracing*/
 char trace_cmd[] = "trace\n";
 char untrace_cmd[] = "untrace\n";
 
@@ -114,7 +115,7 @@ runcmd(struct cmd *cmd)
     ecmd = (struct execcmd*)cmd;
     if(ecmd->argv[0] == 0)
       exit();
-    if (tracing) trace(T_TRACE | T_ONFORK); // set tracing on
+    if (tracing) trace(SYSCALL_TRACE | SYSCALL_ONFORK); // set tracing on
     exec(ecmd->argv[0], ecmd->argv);
     printf(2, "exec %s failed\n", ecmd->argv[0]);
     break;
@@ -210,11 +211,11 @@ main(void)
       continue;
     }
     if (streq(buf, trace_cmd)) {
-      tracing = 1;
+      tracing = 1; // tracing is set to 1 when "trace" is written on shell
       continue;
     }
     if (streq(buf, untrace_cmd)) {
-      tracing = 0;
+      tracing = 0; // tracing is set to 0 when "untrace" is written on shell
       continue;
     }
     if(fork1() == 0) {

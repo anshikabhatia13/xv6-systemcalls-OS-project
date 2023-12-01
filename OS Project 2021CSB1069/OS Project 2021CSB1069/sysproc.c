@@ -102,12 +102,15 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+/*Q2 Changes made to return ps function */
 int 
 sys_ps(void){
 return ps();
 
 }
 
+/*Q3 chnages made to return AccessHistory function*/
 
 int 
 sys_history(void){
@@ -115,6 +118,6 @@ char * buffer;
 int hisID;
 argptr(0, &buffer, 1);
 argint(1, &hisID);
-return getCmdFromHistory(buffer, hisID);
+return AccessHistory(buffer, hisID);
 
 }

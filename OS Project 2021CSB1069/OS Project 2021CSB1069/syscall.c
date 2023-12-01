@@ -108,15 +108,20 @@ extern int sys_ps(void);
 extern int sys_history(void);
 extern int sys_wait2(void);
 
-// Procedure for trace system call, this runs in kernel
+
+/*Changes for Q1 start*/
+
 int sys_trace() {
-	static int n;
+	static int n; // nth 32-bit system call argument.
 	argint(0, &n);
 	struct proc *curproc = myproc();
-	curproc->traced = (n & T_TRACE) ? n : 0;
+	curproc->traced = (n & SYSCALL_TRACE) ? n : 0; // Procedure for trace system call that runs in kernel if flag SYSCALL_TRACE is true
 	return 0;
 }
 
+
+
+/*Changes for Q1 end*/
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
 [SYS_exit]    sys_exit,
@@ -178,39 +183,44 @@ syscall(void)
 {
   int num, i;
   struct proc *curproc = myproc();
-  int is_traced = (curproc->traced & T_TRACE);
+  
+  int is_traced = (curproc->traced & SYSCALL_TRACE);
+  
   char procname[16];
 
-  // copy process name
   for(i=0; curproc->name[i] != 0; i++) {
     procname[i] = curproc->name[i];
   }
   procname[i] = curproc->name[i];
 
   num = curproc->tf->eax;
-  // if syscall is exit(), we will never get back to printing phase
-  // so print it here only
-  // In this cases we don't want to print return value
-  if(num == SYS_exit && is_traced) {
-    cprintf("TRACE: pid = %d | process name = %s | syscall = %s\n",
-        curproc->pid,
-	procname,
-	syscall_names[num]);
-  }
-  if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
-    curproc->tf->eax = syscalls[num]();
+  
+  
+  /*Handling case 1 when the syscall used is exit() . In that case we do not print return vaue as it gets ended ere only*/
+  
+  // but this case can never arise as we dont have exit() syscall so we can comment it out as well
+  
+  //if(num == SYS_exit && is_traced) 
+  //{
+  //cprintf("System Call %s traced with pid = %d and process name = %s\n",syscall_names[num],curproc->pid,procname);
+  //}
+  
+  
+  /*Handling other cases that actially give return value*/
+  
+  if(num > 0 && num < NELEM(syscalls) && syscalls[num]) 
+  {
+    curproc->tf->eax = syscalls[num](); // making sure that valid system call has been made
+    
     if (is_traced) {
-      // * Add colored output to make it distinct from normal output
-      // * We use single printf to avoid race conditions jumbling output
+      
       cprintf((num == SYS_exec && curproc->tf->eax == 0) ?
-        "TRACE: pid = %d | process name = %s | syscall = %s\n" :
-        "TRACE: pid = %d | process name = %s | syscall = %s | return val = %d\n",
-        curproc->pid,
-	procname,
-	syscall_names[num],
-	curproc->tf->eax);
+        "System Call %s traced with pid = %d and process name = %s\n" :
+        "System Call %s traced with pid = %d, process name = %s and return val = %d\n",syscall_names[num], curproc->pid,procname,curproc->tf->eax);
 	
-	// comment out 
+// first condition if return val is 0 of the system call exec() and second for all other
+
+/*The following can be commented out to see result in format the ques is asked*/
 	
 	//cprintf("%d: syscall %s -> %d\n", curproc->pid, syscall_names[num], curproc->tf->eax);
     }

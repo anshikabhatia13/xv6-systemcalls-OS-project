@@ -3,8 +3,6 @@
 #include "types.h"
 #include "stat.h"
 #include "user.h"
-
-// OUR file
 #include "trace.h"
 
 
@@ -25,15 +23,15 @@ void forkrun() {
 
 int main() {
 	printf(1, "Process is being traced.\n");
-	trace(T_TRACE);
+	trace(SYSCALL_TRACE);
 	forkrun();
-
-	trace(T_UNTRACE);
+	
+	trace(SYSCALL_UNTRACE);
 	printf(1, "Processs & forks being traced.\n");
-	trace(T_TRACE | T_ONFORK);
+	trace(SYSCALL_TRACE | SYSCALL_ONFORK);
 	forkrun();
 
-	trace(T_UNTRACE);
+	trace(SYSCALL_UNTRACE);
 	printf(1, "Process not being traced.\n");
 	forkrun();
 

@@ -88,12 +88,15 @@ allocproc(void)
 
 found:
   p->state = EMBRYO;
-  p->traced = T_UNTRACE;
+  p->traced = SYSCALL_UNTRACE; /*Q1 adding default*/
   p->pid = nextpid++;
-  p->ctime = ticks;
-  p->retime = 0;
-  p->rutime = 0;
-  p->stime = 0;
+  /*Q4 changes made here to initialize the statistics*/
+  p->creationtime = ticks; // initialized to current number of clock ticks
+  p->readytime = 0;
+  p->runningtime = 0;
+  p->sleepingtime = 0;
+  
+  
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -156,7 +159,7 @@ userinit(void)
   acquire(&ptable.lock);
 
   p->state = RUNNABLE;
-  p->traced = T_TRACE | T_TRACE_BOOT;
+  p->traced = SYSCALL_TRACE | SYSCALL_TRACEONBOOT;  // Q1 added condition to always trace during booting
 
   release(&ptable.lock);
 }
@@ -204,7 +207,7 @@ fork(void)
     np->state = UNUSED;
     return -1;
   }
-  np->traced = (curproc->traced & T_ONFORK) ? curproc->traced : T_UNTRACE;
+  np->traced = (curproc->traced & SYSCALL_ONFORK) ? curproc->traced : SYSCALL_UNTRACE; // tracing if trace is on esle untrace
   np->sz = curproc->sz;
   np->parent = curproc;
   *np->tf = *curproc->tf;
@@ -319,7 +322,9 @@ wait(void)
     sleep(curproc, &ptable.lock);  //DOC: wait-sleep
   }
 }
-int wait2(int *retime, int *rutime, int *stime)
+
+/*Q4 implementation of wait2 starts*/
+int wait2(int *readytime, int *runningtime, int *sleepingtime)
 {
   struct proc *p;
   int havekids, pid;
@@ -336,12 +341,12 @@ int wait2(int *retime, int *rutime, int *stime)
       havekids = 1;
       if (p->state == ZOMBIE)
       {
-        //updating retime,rutime,stime of this child process
-        *retime = p->retime;
-        *rutime = p->rutime;
-        *stime = p->stime;
+        //updating the time -- (here differs from wait)//
+        *readytime = p->readytime;
+        *runningtime = p->runningtime;
+        *sleepingtime = p->sleepingtime;
 
-        // Found one.
+        // if Found one.
         pid = p->pid;
         kfree(p->kstack);
         p->kstack = 0;
@@ -351,10 +356,12 @@ int wait2(int *retime, int *rutime, int *stime)
         p->name[0] = 0;
         p->killed = 0;
         p->state = UNUSED;
-        p->retime = 0;
-        p->rutime = 0;
-        p->ctime = 0;
-        p->stime = 0;
+        //add all these too 
+        p->readytime = 0;
+        p->runningtime = 0;
+        p->creationtime = 0;
+        p->sleepingtime = 0;
+        
         release(&ptable.lock);
         return pid;
       }
@@ -372,6 +379,8 @@ int wait2(int *retime, int *rutime, int *stime)
   }
 }
 
+
+/*Q4 implementation of wait2 ends*/
 
 //PAGEBREAK: 42
 // Per-CPU process scheduler.
@@ -594,58 +603,72 @@ procdump(void)
     cprintf("\n");
   }
 }
-int
-ps(void)
-{
-  struct proc *p;
 
-  acquire(&ptable.lock);
+/*Q2 changes made for ps system call*/
+int ps(void)
+{
+  struct proc *p; // a process of struct type proc
+
+  acquire(&ptable.lock); // acquiring the lock to prevent race condition
   cprintf("Name | PID | PPID | Size | State | Waiting  | Killed\n");
 
   for (p = ptable.proc; p < &ptable.proc[NPROC]; p++) {
+  
+  // for all the process in the processes table
     if (p->state == UNUSED)
-      continue;
+      continue; // first to check if it is being used or not
 
     char *state;
+    
     if (p->state == SLEEPING)
       state = "SLEEPING";
-    else if (p->state == RUNNING)
-      state = "RUNNING";
+      
     else if (p->state == RUNNABLE)
       state = "RUNNABLE";
+      
+    else if (p->state == RUNNING)
+      state = "RUNNING";
+    
     else
       state = "UNKNOWN";
-
+	// after that the state of process is checked!
+	
     char *waiting = (p->chan) ? "Yes" : "No";
     char *killed = (p->killed) ? "Yes" : "No";
+    	// then it is checked if the process is waiting or killed
 
     cprintf("%s | %d | %d | %d | %s | %s | %s\n", p->name, p->pid, (p->parent ? p->parent->pid : -1), p->sz, state, waiting, killed);
-  }
+  }// printing  processes's metrics
 
-  release(&ptable.lock);
+  release(&ptable.lock); // releasing the lock
   return 0;
 }
 
-void updateStats()
+
+/*Q4 changes made*/
+void updateStatistics()
 {
-  struct proc *p;
-  acquire(&ptable.lock);
-  p = ptable.proc;
-  while (p < &ptable.proc[NPROC])
+  struct proc *p; // for a process of struct proc
+  
+  acquire(&ptable.lock); // acquire lock to avoid race condition
+  
+  p = ptable.proc; // for first process from process table
+  
+  while (p < &ptable.proc[NPROC]) 
   {
     if (p->state == SLEEPING)
     {
-      p->stime++;
+      p->sleepingtime++; // enhance the sleeping time if process is sleeping
     }
     else if (p->state == RUNNABLE)
     {
-      p->retime++;
+      p->readytime++; //enhance the ready time if process is ready
     }
     else if (p->state == RUNNING)
     {
-      p->rutime++;
+      p->runningtime++; //enhance the running time if process is running
     }
-    p++;
+    p++; // next process
   }
   release(&ptable.lock);
 }

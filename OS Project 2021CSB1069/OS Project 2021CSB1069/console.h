@@ -17,26 +17,26 @@
   this method eareases the current line from screen
 */
 void
-eraseCurrentLineOnScreen(void);
+rmCurrLinefromConsole(void);
 
 /*
   this method copies the chars currently on display (and on Input.buf) to oldBuf and save its length on current_history_viewed.lengthOld
 */
 void
-copyCharsToBeMovedToOldBuffer(void);
+charstoOlsBuff(void);
 
 
 /*
   this method earase all the content of the current command on the inputbuf
 */
 void
-eraseContentOnInputBuffer();
+clrInpBuff();
 
 /*
   this method will print the given buf on the screen
 */
 void
-copyBufferToScreen(char * bufToPrintOnScreen, uint length);
+copyBufftoConsole(char * bufToPrintOnScreen, uint length);
 
 /*
   this method will copy the given buf to Input.buf
@@ -44,16 +44,16 @@ copyBufferToScreen(char * bufToPrintOnScreen, uint length);
   assumes input.r=input.w=input.rightmost=input.e                                                                   
 */
 void
-copyBufferToInputBuffer(char * bufToSaveInInput, uint length);
+copybuftoInpBuff(char * bufToSaveInInput, uint length);
 
 /*
   this method copies the current command in the input.buf to the saved history 
   @param length - length of command to be saved                                                                                 //GILAD QUES who should call this??
 */
 void
-saveCommandInHistory();
+saveHistoricalCommands();
 
 /*
   this is the function that gets called by the sys_history and writes the requested command history in the buffer
 */
-int getCmdFromHistory(char *buffer, int historyId);
+int AccessHistory(char *buffer, int historyId);
